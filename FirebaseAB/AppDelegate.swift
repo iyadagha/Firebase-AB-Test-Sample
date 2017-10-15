@@ -1,21 +1,22 @@
 //
 //  AppDelegate.swift
-//  FirebaseAB
+//  firebaseTest
 //
-//  Created by Iyad Tamer Agha on 14.10.17.
+//  Created by Iyad Tamer Agha on 22.09.17.
 //  Copyright © 2017 Iyad Tamer Agha. All rights reserved.
 //
 
 import UIKit
+import Firebase
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        FirebaseApp.configure()
+        let _ = MyRemoteConfig.sharedInstance
         return true
     }
 
@@ -41,6 +42,29 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
 
+    func configureRemoteConfig(){
+        let remoteConfigSettings = RemoteConfigSettings(developerModeEnabled: true)
+        RemoteConfig.remoteConfig().configSettings = remoteConfigSettings!
+        //remoteConfig.setDefaults(fromPlist: "RemoteConfigDefaults")
+        var expirationDuration = 3600
+        // If your app is using developer mode, expirationDuration is set to 0, so each fetch will
+        // retrieve values from the service.
+        if RemoteConfig.remoteConfig().configSettings.isDeveloperModeEnabled {
+            expirationDuration = 0
+        }
+        RemoteConfig.remoteConfig().fetch(withExpirationDuration: TimeInterval(expirationDuration)) { (status, error) -> Void in
+            if status == .success {
+                print("Config fetched!")
+                RemoteConfig.remoteConfig().activateFetched()
+                let decision = RemoteConfig.remoteConfig()["niceButton"].stringValue
+                Analytics.setUserProperty(decision, forName: "experimentGroup")
+
+            } else {
+                print("Config not fetched")
+                print("Error \(error!.localizedDescription)")
+            }
+        }
+    }
 
 }
 
